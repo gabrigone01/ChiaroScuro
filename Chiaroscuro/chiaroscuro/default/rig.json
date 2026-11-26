@@ -1,0 +1,9 @@
+{
+ "uscita": {"plugin": "DMX USB", "linea": 0},
+ "movimento": true,
+ "gobo": true,
+ "fari": [
+  {"nome": "Par SX", "produttore": "American DJ", "modello": "VPar", "modo": "7 Channel", "indirizzo": 1},
+  {"nome": "Par DX", "produttore": "American DJ", "modello": "VPar", "modo": "7 Channel", "indirizzo": 8}
+ ]
+}

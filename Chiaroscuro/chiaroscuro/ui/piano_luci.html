@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chiaroscuro</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="apple-touch-icon" href="/icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1c1009">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Chiaroscuro">
+<style>
+  :root {
+    --bg: #1c1009; --panel: #2a1c12; --panel2: #342418; --line: #4a3626;
+    --text: #f0e1cd; --muted: #b59e86; --dim: #7d6a58; --ok: #7bc47f; --warn: #e0a040; --accent: #e8b65a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 14px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+  body { display: flex; height: 100vh; overflow: hidden; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  #stage { position: relative; flex: 1; min-width: 0; container-type: inline-size; }
+  canvas { display: block; width: 100%; height: 100%; }
+  /* barra in cima al palco: come stai suonando (a sinistra) e stato (a destra) */
+  #topbar { position: absolute; left: 0; right: 0; top: 0; display: flex; gap: 12px; align-items: center; padding: 7px 12px;
+    background: linear-gradient(rgba(14,8,5,.94), rgba(14,8,5,.55)); font-size: 11px; color: var(--muted); }
+  .mini { width: 74px; flex: none; }
+  .mini .l { display: flex; justify-content: space-between; gap: 4px; white-space: nowrap; }
+  .mini .l b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 3px; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--muted); transition: width .12s linear; }
+  .chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--panel2); color: var(--dim); border: 1px solid var(--line); white-space: nowrap; }
+  .chip.on { color: #1c1009; background: var(--warn); border-color: var(--warn); }
+  #topbar .sp { flex: 1; }
+  .st { display: flex; gap: 10px; align-items: center; white-space: nowrap; }
+  .st { flex: none; }
+  .st .nm { max-width: 170px; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: bottom; }
+  #topbar a { color: var(--text); text-decoration: none; padding: 3px 9px; border-radius: 8px; background: var(--panel2);
+    border: 1px solid var(--line); white-space: nowrap; }
+  #topbar a:hover { border-color: var(--muted); }
+  #banner { position: absolute; left: 50%; bottom: 30%; transform: translateX(-50%); padding: 8px 16px;
+    border-radius: 999px; background: rgba(0,0,0,.7); color: var(--warn); font-size: 13px; display: none; white-space: nowrap; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--dim); margin-right: 4px; }
+  .dot.ok { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+  @container (max-width: 980px) { .mini.opt2 { display: none; } #tTon { display: none; } }
+  @container (max-width: 880px) { .mini.opt { display: none; } }
+  @container (max-width: 700px) { .st .lbl { display: none; } .st .nm { max-width: 80px; } }
+  @container (max-width: 560px) { .mini { display: none; } #cPed { display: none; } }
+
+  aside { width: 440px; flex: none; background: var(--panel); border-left: 1px solid var(--line);
+    padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+  h2 { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: baseline; }
+  h2 small { letter-spacing: 0; text-transform: none; font-weight: 400; color: var(--dim); }
+  .now { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: stretch; }
+  #moodBox { border-radius: 12px; padding: 8px 12px; background: var(--panel2); border: 1px solid var(--line); transition: background .8s, color .8s; }
+  #moodName { font-size: 22px; font-weight: 700; line-height: 1.1; }
+  #moodHint { font-size: 12px; opacity: .85; }
+  .btn { border: 1px solid var(--line); background: var(--panel2); border-radius: 10px; padding: 8px 10px; text-align: left;
+    position: relative; transition: transform .05s, box-shadow .2s, border-color .2s; user-select: none; -webkit-user-select: none; }
+  .btn:active { transform: scale(.98); }
+  .btn kbd, .mhead kbd { position: absolute; right: 7px; top: 6px; font: 600 10px/1 ui-monospace, Menlo, Consolas, monospace; opacity: .6; }
+  .btn.on { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.85), 0 0 18px rgba(255,255,255,.25); }
+  #auto { width: 112px; text-align: center; font-weight: 700; font-size: 13px; padding: 8px; }
+  #auto.on { background: var(--accent); color: #1c1009; border-color: var(--accent); box-shadow: 0 0 16px rgba(232,182,90,.45); }
+  #auto small { display: block; font-weight: 400; font-size: 11px; opacity: .8; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .grid6 { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+  /* atmosfera: titolo (variante 1) + tre varianti */
+  .mcard { border-radius: 10px; padding: 6px 7px 7px; border: 1px solid transparent; transition: box-shadow .2s, border-color .2s; }
+  .mcard.on { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.85), 0 0 18px rgba(255,255,255,.25); }
+  .mhead { all: unset; display: block; position: relative; cursor: pointer; font-weight: 700; font-size: 14px; padding-right: 16px;
+    width: 100%; box-sizing: border-box; }
+  .mhead span { display: block; font-weight: 400; font-size: 10.5px; opacity: .8; }
+  .vars { display: flex; gap: 4px; margin-top: 5px; }
+  .vars button { flex: 1; min-width: 0; font-size: 10px; line-height: 1.15; padding: 3px 2px; border-radius: 6px; min-height: 30px;
+    background: rgba(0,0,0,.2); border: 1px solid rgba(255,255,255,.12); white-space: normal; overflow-wrap: normal; hyphens: manual; }
+  .vars button.on { background: rgba(255,255,255,.92); color: #1c1009; border-color: #fff; font-weight: 700; }
+  .col { min-height: 36px; font-size: 12px; font-weight: 600; padding: 5px 14px 5px 7px; line-height: 1.15; }
+  .col kbd { top: 4px; right: 3px; font-size: 9px; }
+  .mom { min-height: 44px; font-size: 12px; font-weight: 700; padding: 6px 14px 6px 8px; }
+  .mom span { display: block; font-weight: 400; font-size: 10px; opacity: .8; }
+  .toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; padding-right: 18px; }
+  .toggle i { width: 30px; height: 17px; border-radius: 9px; background: #1a110b; border: 1px solid var(--line); position: relative; flex: none; transition: background .2s; }
+  .toggle i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 11px; height: 11px; border-radius: 50%; background: var(--dim); transition: left .2s, background .2s; }
+  .toggle.on i { background: var(--accent); border-color: var(--accent); }
+  .toggle.on i::after { left: 15px; background: #1c1009; }
+  .range { display: grid; grid-template-columns: 90px 1fr 40px; gap: 8px; align-items: center; font-size: 12px; margin-top: 6px; }
+  .range span:first-child { color: var(--muted); }
+  .range span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .fx { min-height: 44px; font-weight: 700; font-size: 13px; text-align: center; }
+  .fx span { display: block; font-weight: 400; font-size: 10px; opacity: .7; }
+  .fx.held { box-shadow: 0 0 0 2px #fff, 0 0 26px rgba(255,240,210,.8); }
+  @media (max-width: 1000px) {
+    body { flex-direction: column; height: auto; overflow: auto; }
+    #stage { height: 58vh; flex: none; }
+    aside { width: auto; border-left: 0; border-top: 1px solid var(--line); }
+    .mini:nth-child(n+4) { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div id="topbar">
+    <div class="mini"><div class="l">Tocco <b id="tVel">0</b></div><div class="bar"><i id="mVel"></i></div></div>
+    <div class="mini"><div class="l">Note/s <b id="tRate">0</b></div><div class="bar"><i id="mRate"></i></div></div>
+    <div class="mini opt"><div class="l">Accordi <b id="tAcc">0</b></div><div class="bar"><i id="mAcc"></i></div></div>
+    <div class="mini opt2"><div class="l">Registro <b id="tReg">–</b></div><div class="bar"><i id="mReg"></i></div></div>
+    <div class="mini"><div class="l">Luce <b id="tDyn">0%</b></div><div class="bar"><i id="mDyn"></i></div></div>
+    <span class="chip" id="cPed">Pedale</span><span class="chip" id="tTon">–</span>
+    <span class="sp"></span>
+    <div class="st">
+      <span title="MIDI"><span class="dot" id="dMidi"></span><span class="nm" id="tMidi">MIDI</span></span>
+      <span><span class="dot" id="dQlc"></span><span id="tQlc">QLC+</span></span>
+      <a href="/config#simSec" id="simBadge" style="display:none;background:#781414;border-color:#9a2a22">▶ simulazione</a>
+      <a href="/config" title="Impostazioni">⚙<span class="lbl"> Impostazioni</span></a>
+    </div>
+  </div>
+  <div id="banner"></div>
+</div>
+
+<aside>
+  <section>
+    <h2>Atmosfera <small>tasti 1–8 · 3 varianti</small></h2>
+    <div class="now">
+      <div id="moodBox"><div id="moodName">—</div><div id="moodHint">in attesa del ponte…</div></div>
+      <button class="btn" id="auto">AUTO<small>il piano sceglie</small><kbd>A</kbd></button>
+    </div>
+    <div class="grid2" id="moods" style="margin-top:8px"></div>
+  </section>
+  <section>
+    <h2>Momenti <small id="kMom"></small></h2>
+    <div class="grid3" id="momenti"></div>
+  </section>
+  <section>
+    <h2>Colori fissi <small id="kCol"></small></h2>
+    <div class="grid4" id="colors"></div>
+  </section>
+  <section>
+    <h2>Il piano</h2>
+    <div class="grid2">
+      <button class="btn toggle" id="sw_luce"><i></i>Luce segue il tocco<kbd>S</kbd></button>
+      <button class="btn toggle" id="sw_lampi"><i></i>Lampi sui colpi<kbd>D</kbd></button>
+    </div>
+    <label class="range"><span>Sensibilità</span><input type="range" id="sens" min="0" max="255"><span id="tSens"></span></label>
+    <label class="range"><span>Luminosità</span><input type="range" id="lum" min="0" max="255"><span id="tLum"></span></label>
+  </section>
+  <section>
+    <h2>Effetti <small>lampo e strobo: tieni premuto</small></h2>
+    <div class="grid4">
+      <button class="btn fx" id="fx_lampo" style="background:#fae6be;color:#1c1009">LAMPO<span>J</span></button>
+      <button class="btn fx" id="fx_strobo" style="background:#e1ded7;color:#1c1009">STROBO<span>K</span></button>
+      <button class="btn fx" id="fx_blackout" style="background:#46464c">BLACKOUT<span>B</span></button>
+      <button class="btn fx" id="fx_stop" style="background:#781414">STOP<span>0 · sfuma 3 s</span></button>
+    </div>
+  </section>
+</aside>
+
+<script>
+const NOTE = ["Do","Do#","Re","Mib","Mi","Fa","Fa#","Sol","Lab","La","Sib","Si"];
+const $ = id => document.getElementById(id);
+const rgb = (c, a = 1) => `rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
+const lum = c => 0.299*c[0] + 0.587*c[1] + 0.114*c[2];
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function cmd(o) { return fetch("/api/cmd", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) }).catch(() => {}); }
+
+// ---- pulsanti: costruiti dalla descrizione della console (vc_ids.json, generata con il progetto)
+let META = { moods: [], colori: [], momenti: [] }, MOODS = {};
+const KEYMAP = {};
+async function loadConsole() {
+  try { META = await (await fetch("/api/console")).json(); } catch (_) { return setTimeout(loadConsole, 1500); }
+  MOODS = {}; for (const m of META.moods) MOODS[m.key] = m;
+  const box = $("moods"); box.innerHTML = "";
+  for (const m of META.moods) {
+    const card = document.createElement("div");
+    card.className = "mcard"; card.id = "m_" + m.key;
+    card.style.background = rgb(m.ui); card.style.color = lum(m.ui) > 140 ? "#1c1009" : "#fff";
+    card.innerHTML = `<button class="mhead">${esc(m.caption)}<span>${esc(m.hint)}</span><kbd>${esc(m.keych)}</kbd></button>
+      <div class="vars">${m.varianti.map((v, i) => `<button data-v="${i}" title="${esc(v)}">${esc(v)}</button>`).join("")}</div>`;
+    card.querySelector(".mhead").onclick = () => cmd({ azione: "mood", nome: m.key, variante: 0 });
+    card.querySelectorAll(".vars button").forEach(b => b.onclick = () => cmd({ azione: "mood", nome: m.key, variante: +b.dataset.v }));
+    box.appendChild(card);
+    KEYMAP[m.keych] = () => cmd({ azione: "mood", nome: m.key, variante: 0 });
+  }
+  $("momenti").innerHTML = ""; $("colors").innerHTML = "";
+  for (const mo of META.momenti) {
+    const b = document.createElement("button");
+    b.className = "btn mom"; b.id = "mo_" + mo.nome;
+    b.style.background = rgb(mo.ui); b.style.color = lum(mo.ui) > 140 ? "#1c1009" : "#fff";
+    b.innerHTML = `${esc(mo.nome)}<span>${esc(mo.hint)}</span><kbd>${esc(mo.key)}</kbd>`;
+    b.onclick = () => cmd({ azione: "momento", nome: mo.nome });
+    $("momenti").appendChild(b);
+    KEYMAP[mo.key.toLowerCase()] = () => b.click();
+  }
+  for (const c of META.colori) {
+    const b = document.createElement("button");
+    b.className = "btn col"; b.id = "c_" + c.nome;
+    b.style.background = rgb(c.ui); b.style.color = lum(c.ui) > 140 ? "#1c1009" : "#fff";
+    b.innerHTML = `${esc(c.nome)}<kbd>${esc(c.key)}</kbd>`;
+    b.onclick = () => cmd({ azione: "colore", nome: c.nome });
+    $("colors").appendChild(b);
+    KEYMAP[c.key.toLowerCase()] = () => b.click();
+  }
+  $("kMom").textContent = META.momenti.map(m => m.key).join(" ");
+  $("kCol").textContent = META.colori.map(c => c.key).join(" ");
+  onState();
+}
+loadConsole();
+
+$("auto").onclick = () => cmd({ azione: "interruttore", nome: "auto" });
+$("sw_luce").onclick = () => cmd({ azione: "interruttore", nome: "luce" });
+$("sw_lampi").onclick = () => cmd({ azione: "interruttore", nome: "lampi" });
+$("fx_blackout").onclick = () => cmd({ azione: "blackout" });
+$("fx_stop").onclick = () => cmd({ azione: "stop" });
+function hold(id, name) {
+  const el = $(id); let on = false;
+  const set = v => { if (v === on) return; on = v; el.classList.toggle("held", v); cmd({ azione: "tieni", nome: name, on: v }); };
+  el.addEventListener("pointerdown", e => { el.setPointerCapture(e.pointerId); set(true); });
+  el.addEventListener("pointerup", () => set(false));
+  el.addEventListener("pointercancel", () => set(false));
+  return set;
+}
+const holdLampo = hold("fx_lampo", "lampo"), holdStrobo = hold("fx_strobo", "strobo");
+let editing = {};
+for (const [id, name] of [["sens", "sensibilita"], ["lum", "luminosita"]]) {
+  const el = $(id); let t = 0;
+  el.addEventListener("input", () => {
+    editing[id] = performance.now();
+    $(id === "sens" ? "tSens" : "tLum").textContent = Math.round(el.value / 2.55) + "%";
+    clearTimeout(t); t = setTimeout(() => cmd({ azione: "valore", nome: name, valore: +el.value }), 40);
+  });
+}
+
+// ---- tastiera (come in QLC+)
+Object.assign(KEYMAP, { a: () => $("auto").click(), s: () => $("sw_luce").click(), d: () => $("sw_lampi").click(),
+  b: () => $("fx_blackout").click(), "0": () => $("fx_stop").click() });
+addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  const k = e.key.toLowerCase();
+  if (k === "j") return holdLampo(true);
+  if (k === "k") return holdStrobo(true);
+  if (KEYMAP[k]) { KEYMAP[k](); e.preventDefault(); }
+});
+addEventListener("keyup", e => { const k = e.key.toLowerCase(); if (k === "j") holdLampo(false); if (k === "k") holdStrobo(false); });
+addEventListener("blur", () => { holdLampo(false); holdStrobo(false); });
+
+// ---- stato dal ponte
+let S = { held: {}, fx: [], mood: "ATTESA" }, lastMsg = 0, rig = { fari: [] }, rigVer = -1;
+function connect() {
+  const es = new EventSource("/eventi");
+  es.onmessage = e => { try { S = JSON.parse(e.data); lastMsg = performance.now(); onState(); } catch (_) {} };
+  es.onerror = () => { es.close(); setTimeout(connect, 1500); };
+}
+connect();
+async function loadRig() { try { rig = await (await fetch("/api/rig")).json(); loadConsole(); } catch (_) {} }
+
+const bars = []; let prevHeld = {};
+function onState() {
+  if (S.rigVer !== undefined && S.rigVer !== rigVer) { rigVer = S.rigVer; loadRig(); }
+  const h = S.held || {};
+  for (const n in h) if (!(n in prevHeld)) bars.push({ n: +n, vel: h[n], top: 0, bottom: 0, held: true });
+  for (const b of bars) if (b.held && !(String(b.n) in h)) b.held = false;
+  prevHeld = h;
+
+  // cosa è acceso adesso: atmosfera (con variante), momento o colore
+  const att = S.attivi || { moods: [], colori: [], momenti: [] };
+  const am = (att.moods || [])[0], amo = (att.momenti || [])[0], ac = (att.colori || [])[0];
+  let name = "—", hint = S.sw && S.sw.auto ? "il piano sta scegliendo…" : "nessun programma acceso", c = [52, 36, 24];
+  if (am && MOODS[am[0]]) { const m = MOODS[am[0]]; name = m.caption; hint = `${m.varianti[am[1]] || ""} · ${m.hint}`; c = m.ui; }
+  else if (amo) { const mo = META.momenti.find(x => x.nome === amo); name = amo; hint = "momento" + (mo ? " · " + mo.hint : ""); c = mo ? mo.ui : c; }
+  else if (ac) { const co = META.colori.find(x => x.nome === ac); name = ac; hint = "colore fisso"; c = co ? co.ui : c; }
+  $("moodName").textContent = name; $("moodHint").textContent = hint;
+  $("moodBox").style.background = rgb(c, .92); $("moodBox").style.color = lum(c) > 140 ? "#1c1009" : "#fff";
+  for (const m of META.moods) {
+    const card = $("m_" + m.key); if (!card) continue;
+    const on = (att.moods || []).filter(x => x[0] === m.key).map(x => x[1]);
+    card.classList.toggle("on", on.length > 0);
+    card.querySelectorAll(".vars button").forEach(b => b.classList.toggle("on", on.includes(+b.dataset.v)));
+  }
+  for (const mo of META.momenti) { const b = $("mo_" + mo.nome); if (b) b.classList.toggle("on", (att.momenti || []).includes(mo.nome)); }
+  for (const co of META.colori) { const b = $("c_" + co.nome); if (b) b.classList.toggle("on", (att.colori || []).includes(co.nome)); }
+  const sw = S.sw || {};
+  $("auto").classList.toggle("on", !!sw.auto);
+  $("sw_luce").classList.toggle("on", !!sw.luce); $("sw_lampi").classList.toggle("on", !!sw.lampi);
+  $("fx_blackout").classList.toggle("on", !!att.blackout);
+  for (const [id, v, t] of [["sens", S.sens, "tSens"], ["lum", S.lum, "tLum"]]) {
+    if (v == null || performance.now() - (editing[id] || 0) < 1500) continue;
+    $(id).value = v; $(t).textContent = Math.round(v / 2.55) + "%";
+  }
+
+  const set = (id, frac, txt) => { $("m" + id).style.width = (Math.max(0, Math.min(1, frac)) * 100) + "%"; $("t" + id).textContent = txt; };
+  set("Vel", (S.vel || 0) / 127, Math.round(S.vel || 0));
+  set("Rate", (S.rate || 0) / 12, (S.rate || 0).toFixed(1));
+  set("Acc", ((S.accordo || 1) - 1) / 5, (S.accordo || 0).toFixed(1));
+  const alt = Math.round(S.altezza || 60);
+  set("Reg", (alt - 21) / 87, S.vel ? NOTE[alt % 12] + (Math.floor(alt / 12) - 1) : "–");
+  set("Dyn", S.dyn || 0, Math.round((S.dyn || 0) * 100) + "%");
+  $("tTon").textContent = S.tonalita || "tonalità –";
+  $("cPed").classList.toggle("on", !!S.ped);
+  const midi = S.midi || [];
+  $("dMidi").classList.toggle("ok", midi.length > 0);
+  $("tMidi").textContent = midi.length ? midi.join(", ") : (S.midiSel ? `aspetto “${S.midiSel}”` : "nessun MIDI");
+  $("tMidi").title = $("tMidi").textContent;
+  $("dQlc").classList.toggle("ok", !!S.qlc);
+  $("tQlc").textContent = S.senzaQlc ? "QLC+ disattivato" : (S.qlc ? "QLC+" : "QLC+ non collegato");
+  const sim = S.sim || {};
+  $("simBadge").style.display = sim.on ? "" : "none";
+  $("simBadge").textContent = sim.on ? `▶ ${sim.n ? sim.scenario : "simulazione"}` : "";
+}
+
+// ---- disegno: muro, fari a terra e appesi (americana), piano
+const cv = $("c"), ctx = cv.getContext("2d");
+let W = 0, H = 0;
+function resize() {
+  const d = window.devicePixelRatio || 1, r = cv.getBoundingClientRect();
+  W = r.width; H = r.height; cv.width = W * d; cv.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0);
+}
+addEventListener("resize", resize); resize();
+const isBlack = n => [1,3,6,8,10].includes(n % 12);
+function keyGeom(kx, kw) {
+  const ww = kw / 52, geo = {}; let wi = 0;
+  for (let n = 21; n <= 108; n++) {
+    if (!isBlack(n)) { geo[n] = { x: kx + wi * ww, w: ww, black: false }; wi++; }
+    else geo[n] = { x: kx + wi * ww - ww * 0.31, w: ww * 0.62, black: true };
+  }
+  return geo;
+}
+function drawSpot(c, I, sx, sy, rs, gobo, now) {
+  let g;
+  if (gobo) {   // gobo: disegno a puntini attorno al centro
+    for (let k = 0; k < 7; k++) {
+      const an = k * Math.PI * 2 / 7 + now / 1600, dx = k === 6 ? 0 : Math.cos(an) * rs * 0.45, dy = k === 6 ? 0 : Math.sin(an) * rs * 0.45;
+      g = ctx.createRadialGradient(sx + dx, sy + dy, 0, sx + dx, sy + dy, rs * 0.22);
+      g.addColorStop(0, rgb(c, 0.85 * I)); g.addColorStop(1, rgb(c, 0));
+      ctx.fillStyle = g; ctx.fillRect(sx + dx - rs * 0.22, sy + dy - rs * 0.22, rs * 0.44, rs * 0.44);
+    }
+  } else {
+    g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rs);
+    g.addColorStop(0, rgb(c, 0.75 * I)); g.addColorStop(0.5, rgb(c, 0.3 * I)); g.addColorStop(1, rgb(c, 0));
+    ctx.fillStyle = g; ctx.fillRect(sx - rs, sy - rs, 2 * rs, 2 * rs);
+  }
+}
+const sm = [];  // luci smussate per faro
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  const wallH = H * 0.50, floorY = wallH, kbH = Math.min(H * 0.18, 140), kbY = H - kbH - 12, bodyY = kbY - 26;
+  const kx = 14, kw = W - 28, geo = keyGeom(kx, kw);
+  const fari = rig.fari || [], N = fari.length, fx = S.fx || [];
+  const am = S.attivi && S.attivi.moods && S.attivi.moods[0];
+  const mood = (am && MOODS[am[0]]) || MOODS[S.mood] || { ui: [186, 120, 40] };
+  const moodC = mood.ui;
+  // americana per i fari appesi: sotto la barra in alto, con lo spazio per due righe di nome sopra
+  const trussY = ($("topbar").offsetHeight || 40) + 42;
+  const hung = fari.map(f => !!f.appeso), anyHung = hung.some(Boolean);
+
+  // muro e pavimento
+  ctx.globalCompositeOperation = "source-over";
+  let g = ctx.createLinearGradient(0, 0, 0, wallH); g.addColorStop(0, "#0d0805"); g.addColorStop(1, "#1a110b");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, wallH);
+  g = ctx.createLinearGradient(0, floorY, 0, H); g.addColorStop(0, "#120b07"); g.addColorStop(1, "#060302");
+  ctx.fillStyle = g; ctx.fillRect(0, floorY, W, H - floorY);
+
+  // posizioni lungo la fila
+  const margin = Math.min(W * 0.08, 90), span = W - 2 * margin;
+  const xs = fari.map((_, i) => N === 1 ? W / 2 : margin + span * i / (N - 1));
+  const gap = N > 1 ? span / (N - 1) : W * 0.5;
+  for (let i = 0; i < N; i++) {
+    sm[i] = sm[i] || { c: [0,0,0], i: 0, p: [0.5, 0.5] };
+    const t = fx[i] || { c: [0,0,0], i: 0, s: false }, a = 1 - Math.exp(-dt / 0.06);
+    if (t.p) { const ap = 1 - Math.exp(-dt / 0.09); sm[i].p[0] += (t.p[0] - sm[i].p[0]) * ap; sm[i].p[1] += (t.p[1] - sm[i].p[1]) * ap; }
+    sm[i].g = !!t.g; sm[i].pr = !!t.pr;
+    for (let j = 0; j < 3; j++) sm[i].c[j] += (t.c[j] - sm[i].c[j]) * a;
+    let target = (S.attivi && S.attivi.blackout) ? 0 : t.i; if (t.s && Math.random() < 0.5) target = 0;
+    sm[i].i += (target - sm[i].i) * (t.s ? 1 : a);
+  }
+
+  // luce
+  ctx.globalCompositeOperation = "lighter";
+  const R = Math.max(Math.min(gap * 0.95, W * 0.34), 60);
+  for (let i = 0; i < N; i++) {
+    const { c, i: I } = sm[i], x = xs[i], shape = fari[i].forma, up = !hung[i];
+    if (I < 0.004) continue;
+    if (shape === "testa") {
+      // fascio verso il punto in cui punta la testa (posizione già convertita "come la vede il pubblico"):
+      // a terra: al centro punta in alto, lontano dal centro scende; appesa: al centro punta a terra, lontano dal centro sale
+      const [pp, tt] = sm[i].p, d = Math.min(1, Math.abs(tt - 0.5) * 2);
+      const hy = up ? floorY - 30 : trussY + 42;
+      const tx = x + (pp - 0.5) * 2 * W * 0.42;
+      const ty = up ? wallH * 0.06 + trussY * (anyHung ? 1 : 0) + d * wallH * 0.55 : floorY - 4 - d * (floorY - trussY - 60) * 0.85;
+      const spots = sm[i].pr ? [[0, -14], [-15, 10], [15, 10]] : [[0, 0]];
+      for (const [ox, oy] of spots) {
+        const sx = tx + ox * (1 + R / 200), sy = ty + oy * (1 + R / 200), bw = R * (sm[i].pr ? 0.07 : 0.11);
+        g = ctx.createLinearGradient(x, hy, sx, sy);
+        g.addColorStop(0, rgb(c, 0.8 * I / spots.length ** 0.5)); g.addColorStop(1, rgb(c, 0.12 * I));
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - 4, hy); ctx.lineTo(x + 4, hy);
+        ctx.lineTo(sx + bw, sy); ctx.lineTo(sx - bw, sy); ctx.closePath(); ctx.fill();
+        drawSpot(c, I, sx, sy, R * (sm[i].pr ? 0.22 : 0.32), sm[i].g, now);
+      }
+    } else if (up) {
+      ctx.save(); ctx.translate(x, floorY); ctx.scale(1, shape === "barra" ? 1.1 : 1.6);
+      const r = shape === "barra" ? R * 1.1 : R;
+      g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+      g.addColorStop(0, rgb(c, 1.0 * I)); g.addColorStop(0.3, rgb(c, 0.75 * I));
+      g.addColorStop(0.65, rgb(c, 0.28 * I)); g.addColorStop(1, rgb(c, 0));
+      ctx.fillStyle = g; ctx.fillRect(-r, -wallH / 1.1, 2 * r, wallH / 1.1); ctx.restore();
+    } else {
+      // appeso: cono verso il basso + pozza di luce a terra
+      const y0 = trussY + 26, r = shape === "barra" ? R * 1.0 : R * 0.8;
+      ctx.save(); ctx.translate(x, y0); ctx.scale(1, 1.7);
+      g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+      g.addColorStop(0, rgb(c, 0.95 * I)); g.addColorStop(0.35, rgb(c, 0.55 * I)); g.addColorStop(1, rgb(c, 0));
+      ctx.fillStyle = g; ctx.fillRect(-r, 0, 2 * r, (floorY - y0) / 1.7); ctx.restore();
+      ctx.save(); ctx.translate(x, floorY); ctx.scale(1, 0.25);
+      g = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.8); g.addColorStop(0, rgb(c, 0.55 * I)); g.addColorStop(1, rgb(c, 0));
+      ctx.fillStyle = g; ctx.fillRect(-r, -r, 2 * r, 2 * r); ctx.restore();
+    }
+    ctx.fillStyle = rgb(c, 0.06 * I); ctx.fillRect(0, 0, W, wallH);
+    ctx.save(); ctx.translate(x, floorY); ctx.scale(1, 0.22);
+    g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.8); g.addColorStop(0, rgb(c, 0.32 * I)); g.addColorStop(1, rgb(c, 0));
+    ctx.fillStyle = g; ctx.fillRect(-R, 0, 2 * R, (H - floorY) * 4.5); ctx.restore();
+  }
+  ctx.globalCompositeOperation = "source-over";
+
+  // americana (se ci sono fari appesi)
+  if (anyHung) {
+    const hx = xs.filter((_, i) => hung[i]), x0 = Math.min(...hx) - 40, x1 = Math.max(...hx) + 40;
+    ctx.fillStyle = "#2a2a2a"; ctx.fillRect(x0, trussY - 7, x1 - x0, 3); ctx.fillRect(x0, trussY + 4, x1 - x0, 3);
+    ctx.strokeStyle = "#2a2a2a"; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let xx = x0; xx < x1; xx += 12) { ctx.moveTo(xx, trussY - 5); ctx.lineTo(xx + 12, trussY + 5); }
+    ctx.stroke();
+  }
+
+  // i fari (a terra sul pavimento, appesi all'americana a testa in giù) e i loro nomi
+  ctx.font = "11px -apple-system, 'Segoe UI', Helvetica, Arial"; ctx.textAlign = "center";
+  for (let i = 0; i < N; i++) {
+    const { c, i: I } = sm[i], x = xs[i], f = fari[i], lit = rgb(c.map(v => 35 + v * I * 0.9));
+    ctx.save();
+    if (hung[i]) { ctx.translate(0, trussY + floorY + 6); ctx.scale(1, -1); }   // capovolto sotto l'americana
+    const y = hung[i] ? floorY : floorY;
+    ctx.fillStyle = "#0b0b0b";
+    if (f.forma === "testa") {
+      ctx.fillRect(x - 18, y - 6, 36, 14);
+      ctx.fillRect(x - 14, y - 30, 4, 26); ctx.fillRect(x + 10, y - 30, 4, 26);
+      ctx.beginPath(); ctx.roundRect(x - 10, y - 38, 20, 22, 5); ctx.fill();
+      ctx.fillStyle = lit; ctx.fillRect(x - 6, y - 40, 12, 3);
+    } else if (f.forma === "barra") {
+      const w = Math.min(gap * 0.7, 120);
+      ctx.fillRect(x - w / 2, y - 7, w, 14); ctx.fillStyle = lit; ctx.fillRect(x - w / 2 + 3, y - 9, w - 6, 3);
+    } else if (f.forma === "strobo") {
+      ctx.fillRect(x - 22, y - 14, 44, 22); ctx.fillStyle = lit; ctx.fillRect(x - 18, y - 16, 36, 4);
+    } else {
+      ctx.fillRect(x - 20, y - 8, 40, 17); ctx.fillStyle = lit; ctx.fillRect(x - 15, y - 11, 30, 4);
+    }
+    ctx.restore();
+    if (N <= 24) {   // nome sotto il faro (sopra l'americana per quelli appesi): a capo su due righe, puntini solo se non basta
+      // spazio per il nome: distanza dal faro più vicino nella stessa corsia (americana o pavimento)
+      let near = Infinity;
+      for (let j = 0; j < N; j++) if (j !== i && hung[j] === hung[i]) near = Math.min(near, Math.abs(xs[j] - x));
+      const maxW = Math.max(40, Math.min(near === Infinity ? 200 : near * 0.86, 200)), lines = [""];
+      for (const w of (f.nome || "").split(/\s+/)) {
+        const t = lines[lines.length - 1] ? lines[lines.length - 1] + " " + w : w;
+        if (ctx.measureText(t).width <= maxW || !lines[lines.length - 1]) lines[lines.length - 1] = t; else lines.push(w);
+      }
+      if (lines.length > 2) lines.splice(1, lines.length, lines.slice(1).join(" "));   // al massimo due righe
+      for (let k = 0; k < lines.length; k++) while (lines[k].length > 1 && ctx.measureText(lines[k]).width > maxW) lines[k] = lines[k].slice(0, -2) + "…";
+      ctx.fillStyle = "rgba(240,225,205,.45)";
+      const y0 = hung[i] ? trussY - 12 - (lines.length - 1) * 12 : floorY + 22;
+      lines.forEach((l, k) => ctx.fillText(l, x, y0 + k * 12));
+    }
+  }
+
+  // le note salgono dal piano e si fermano SOTTO la fila dei fari (non vanno sul muro): tagliate sotto le etichette
+  // dei fari e sfumate man mano che si avvicinano alla linea; disegnate piene con un alone
+  const limitY = floorY + 44, zone = Math.max(40, bodyY - limitY), speed = zone * 0.8;
+  for (let k = bars.length - 1; k >= 0; k--) {
+    const b = bars[k]; b.top += speed * dt; if (!b.held) b.bottom += speed * dt;
+    if (b.bottom > zone + 10) bars.splice(k, 1);
+  }
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, limitY, W, bodyY - limitY); ctx.clip();
+  for (const b of bars) {
+    const gk = geo[b.n]; if (!gk) continue;
+    const y1 = Math.max(limitY - 4, bodyY - b.top), y2 = bodyY - b.bottom;
+    if (y2 <= limitY) continue;
+    const v = b.vel / 127, w = Math.max(3, gk.w * 0.75), col = moodC.map(x => x + (255 - x) * (0.35 + 0.5 * v));
+    const fadeAt = y => Math.max(0, Math.min(1, (y - limitY) / (zone * 0.45)));
+    g = ctx.createLinearGradient(0, y1, 0, y2);
+    g.addColorStop(0, rgb(col, (0.55 + 0.45 * v) * fadeAt(y1)));
+    g.addColorStop(1, rgb(col, (0.75 + 0.25 * v) * fadeAt(y2)));
+    ctx.shadowColor = rgb(col, 0.8 * fadeAt(y2)); ctx.shadowBlur = 6 + 10 * v;
+    ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(gk.x + (gk.w - w) / 2, y1, w, Math.max(3, y2 - y1), w / 2); ctx.fill();
+  }
+  ctx.restore();
+
+  // piano
+  g = ctx.createLinearGradient(0, bodyY, 0, H); g.addColorStop(0, "#151515"); g.addColorStop(1, "#050505");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(6, bodyY, W - 12, H - bodyY - 4, 8); ctx.fill();
+  ctx.globalCompositeOperation = "lighter";
+  for (let i = 0; i < N; i++) {
+    const { c, i: I } = sm[i];
+    g = ctx.createLinearGradient(xs[i] - R, 0, xs[i] + R, 0);
+    g.addColorStop(0, rgb(c, 0)); g.addColorStop(0.5, rgb(c, 0.45 * I)); g.addColorStop(1, rgb(c, 0));
+    ctx.fillStyle = g; ctx.fillRect(10, bodyY + 1, W - 20, 3);
+  }
+  ctx.globalCompositeOperation = "source-over";
+  const h = S.held || {};
+  for (const pass of [false, true]) for (let n = 21; n <= 108; n++) {
+    const gk = geo[n]; if (gk.black !== pass) continue;
+    const v = (String(n) in h) ? h[n] / 127 : 0, kh = pass ? kbH * 0.62 : kbH, y = kbY + (v ? 2 : 0);
+    if (!pass) {
+      ctx.fillStyle = v ? rgb(moodC.map(x => 255 - (255 - x) * (0.35 + 0.6 * v))) : "#efe9df";
+      ctx.fillRect(gk.x + 0.5, y, gk.w - 1, kh);
+      ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.fillRect(gk.x + 0.5, y + kh - 6, gk.w - 1, 6);
+    } else {
+      ctx.fillStyle = v ? rgb(moodC.map(x => x * (0.45 + 0.55 * v))) : "#111";
+      ctx.fillRect(gk.x, y, gk.w, kh);
+      ctx.fillStyle = "rgba(255,255,255,.10)"; ctx.fillRect(gk.x + 2, y, gk.w - 4, kh * 0.08);
+    }
+  }
+  ctx.fillStyle = "#4a0f12"; ctx.fillRect(kx, kbY - 3, kw, 3);
+
+  const stale = performance.now() - lastMsg > 2000;
+  const msg = stale ? "Chiaroscuro non raggiungibile: avvia l'app" : (S.msg || "");
+  $("banner").style.display = msg ? "block" : "none"; $("banner").textContent = msg;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

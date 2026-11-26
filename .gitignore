@@ -1,0 +1,15 @@
+# Repository ChiaroScuro: si pubblica SOLO l'app Chiaroscuro e i moduli di _tools che usa.
+# Il resto della cartella ProgettiQlc (Esempi, _mcp, autunno, _docs, CLAUDE.md, .claude, …) resta fuori.
+/*
+!/.gitignore
+!/README.md
+!/LICENSE
+!/.github/
+!/Chiaroscuro/
+!/_tools/
+/_tools/*
+!/_tools/qxf.py
+!/_tools/qlc_ws.py
+!/_tools/midi_in.py
+!/_tools/coremidi.py
+.DS_Store

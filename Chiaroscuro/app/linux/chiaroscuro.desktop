@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Chiaroscuro
+Comment=Luci che seguono il pianoforte (QLC+ 4)
+Exec=@DIR@/Chiaroscuro
+Icon=@DIR@/chiaroscuro.png
+Terminal=false
+Categories=AudioVideo;Audio;Music;

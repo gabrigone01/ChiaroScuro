@@ -1,0 +1,14 @@
+# generati
+build/
+release/
+__pycache__/
+*.pyc
+*.autosave.qxw
+chiaroscuro.log
+# dati di lavoro locali (quando si lancia dai sorgenti): fila di fari, impostazioni, progetto generato, backup
+/rig.json
+/impostazioni.json
+/Chiaroscuro.qxw
+/vc_ids.json
+/fixture/
+/backup/
