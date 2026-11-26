@@ -18,15 +18,26 @@ l'app*) e da provare sui rispettivi sistemi. Da provare col piano e coi fari ver
 
 ---
 
+## Scarica
+| Sistema | Pacchetto |
+|---|---|
+| **macOS** (Apple Silicon) | [Chiaroscuro-macOS-arm64.dmg](https://github.com/gabrigone01/ChiaroScuro/releases/latest/download/Chiaroscuro-macOS-arm64.dmg) · [.zip](https://github.com/gabrigone01/ChiaroScuro/releases/latest/download/Chiaroscuro-macOS-arm64.zip) |
+| **Windows** (64 bit) | [Chiaroscuro-Windows-Setup.exe](https://github.com/gabrigone01/ChiaroScuro/releases/latest/download/Chiaroscuro-Windows-Setup.exe) · [.zip portatile](https://github.com/gabrigone01/ChiaroScuro/releases/latest/download/Chiaroscuro-Windows-x64.zip) |
+| **Linux** (x86-64) | [Chiaroscuro-Linux-x64.tar.gz](https://github.com/gabrigone01/ChiaroScuro/releases/latest/download/Chiaroscuro-Linux-x64.tar.gz) |
+
+Tutte le versioni: [Release](https://github.com/gabrigone01/ChiaroScuro/releases). Serve **QLC+ 4** installato
+([www.qlcplus.org](https://www.qlcplus.org)). macOS: la prima volta clic destro sull'app → *Apri*.
+Windows/Linux: pacchetti costruiti automaticamente, ancora da collaudare sui rispettivi sistemi.
+
 ## Installazione
 1. Installa **QLC+ 4** (www.qlcplus.org). Chiaroscuro lo trova da solo nei percorsi standard:
    macOS `/Applications/QLC+.app`, Windows `C:\QLC+`, Linux `qlcplus` nel PATH (es. `sudo apt install qlcplus`).
    Se è altrove: *Impostazioni → Programma → QLC+ 4*.
 2. Installa Chiaroscuro:
-   - **macOS**: apri `Chiaroscuro-1.0.0-macOS-arm64.dmg` e trascina Chiaroscuro in Applicazioni. L'app non è firmata da uno
+   - **macOS**: apri `Chiaroscuro-macOS-arm64.dmg` e trascina Chiaroscuro in Applicazioni. L'app non è firmata da uno
      sviluppatore Apple: la prima volta clic destro → *Apri* → *Apri* (oppure Impostazioni di Sistema → Privacy e sicurezza → *Apri comunque*).
-   - **Windows**: `Chiaroscuro-1.0.0-Windows-Setup.exe` (o lo .zip portatile). SmartScreen può avvisare: *Ulteriori informazioni* → *Esegui comunque*.
-   - **Linux**: estrai `Chiaroscuro-1.0.0-Linux-<arch>.tar.gz` ed esegui `./install.sh` (menu delle applicazioni).
+   - **Windows**: `Chiaroscuro-Windows-Setup.exe` (o lo .zip portatile). SmartScreen può avvisare: *Ulteriori informazioni* → *Esegui comunque*.
+   - **Linux**: estrai `Chiaroscuro-Linux-x64.tar.gz` ed esegui `./install.sh` (menu delle applicazioni).
      L'utente deve poter leggere i dispositivi MIDI (gruppo `audio`).
 3. Collega il pianoforte via USB-MIDI (anche dopo l'avvio) e l'interfaccia DMX.
 
@@ -150,7 +161,7 @@ Crea `Chiaroscuro/build/venv` con PyInstaller 6.11.1, disegna l'icona e produce 
 sistema su cui gira** (PyInstaller non fa build incrociate): macOS `.dmg` + `.zip`; Windows `.zip` + `Setup.exe` (con Inno
 Setup 6); Linux `.tar.gz` con `install.sh`. Requisiti: Python 3.9+ con tkinter (python.org; su Linux `python3-tk python3-venv`).
 **Tutte e tre insieme**: con il repository su GitHub, `.github/workflows/chiaroscuro.yml` (nella root) costruisce macOS
-Apple Silicon e Intel, Windows e Linux (*Actions → Chiaroscuro app → Run workflow*, oppure tag `chiaroscuro-v1.0.0`).
+Apple Silicon, Windows e Linux (*Actions → Chiaroscuro app → Run workflow*); con un tag `chiaroscuro-v…` crea anche la Release con i pacchetti.
 
 ## Collaudo (2026-11-26, QLC+ 4.14.4, macOS arm64)
 - Analisi col pianista simulato; atmosfere e varianti, momenti, colori, interruttori, lampi, dinamica, blackout, stop.

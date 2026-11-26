@@ -1,6 +1,7 @@
-# Costruisce l'app Chiaroscuro per macOS (Apple Silicon e Intel), Windows e Linux.
-# Avvio: a mano da GitHub (Actions > Chiaroscuro app > Run workflow) oppure con un tag "chiaroscuro-v1.0.0".
-# I file pronti (dmg, Setup.exe, zip, tar.gz) sono negli "Artifacts" dell'esecuzione.
+# Costruisce l'app Chiaroscuro per macOS (Apple Silicon), Windows e Linux.
+# - A mano (Actions > Chiaroscuro app > Run workflow): i pacchetti sono negli "Artifacts" dell'esecuzione.
+# - Con un tag "chiaroscuro-v1.2.3": crea anche la Release con i pacchetti allegati, sia con la versione nel nome
+#   sia con un nome fisso (es. Chiaroscuro-macOS-arm64.dmg) usato dai link "ultima versione" del README.
 name: Chiaroscuro app
 on:
   workflow_dispatch: {}
@@ -11,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, macos-13, windows-latest, ubuntu-22.04]
+        os: [macos-14, windows-latest, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -32,3 +33,31 @@ jobs:
         with:
           name: Chiaroscuro-${{ matrix.os }}
           path: Chiaroscuro/release/*
+
+  release:
+    needs: build
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/chiaroscuro-v') }}
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Nomi fissi per i link "ultima versione"
+        run: |
+          mkdir -p out
+          for f in dist/*/*; do
+            cp "$f" out/
+            cp "$f" "out/$(basename "$f" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+//')"
+          done
+          ls -la out
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Chiaroscuro ${{ github.ref_name }}
+          files: out/*
+          body: |
+            Luci che seguono il pianoforte. Richiede **QLC+ 4** (www.qlcplus.org).
+            - **macOS** (Apple Silicon): `.dmg` → trascina Chiaroscuro in Applicazioni; la prima volta clic destro → Apri.
+            - **Windows**: `Setup.exe` (o lo `.zip` portatile).
+            - **Linux**: estrai il `.tar.gz` ed esegui `./install.sh`.

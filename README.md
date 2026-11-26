@@ -11,6 +11,17 @@ suonando (piano o forte, dolce o arrabbiato, maggiore o minore, lento o veloce) 
 
 Tutto il resto è in **[Chiaroscuro/README.md](Chiaroscuro/README.md)**.
 
+## Scarica
+| Sistema | Pacchetto |
+|---|---|
+| **macOS** (Apple Silicon) | [Chiaroscuro-macOS-arm64.dmg](https://github.com/gabrigone01/ChiaroScuro/releases/latest/download/Chiaroscuro-macOS-arm64.dmg) · [.zip](https://github.com/gabrigone01/ChiaroScuro/releases/latest/download/Chiaroscuro-macOS-arm64.zip) |
+| **Windows** (64 bit) | [Chiaroscuro-Windows-Setup.exe](https://github.com/gabrigone01/ChiaroScuro/releases/latest/download/Chiaroscuro-Windows-Setup.exe) · [.zip portatile](https://github.com/gabrigone01/ChiaroScuro/releases/latest/download/Chiaroscuro-Windows-x64.zip) |
+| **Linux** (x86-64) | [Chiaroscuro-Linux-x64.tar.gz](https://github.com/gabrigone01/ChiaroScuro/releases/latest/download/Chiaroscuro-Linux-x64.tar.gz) |
+
+Tutte le versioni: [Release](https://github.com/gabrigone01/ChiaroScuro/releases). Serve **QLC+ 4** installato
+([www.qlcplus.org](https://www.qlcplus.org)). macOS: la prima volta clic destro sull'app → *Apri*.
+Windows/Linux: pacchetti costruiti automaticamente, ancora da collaudare sui rispettivi sistemi.
+
 ## Struttura
 ```
 Chiaroscuro/                  l'app (pacchetto Python "chiaroscuro", pagine web, script, build)
@@ -30,5 +41,6 @@ python3 -m chiaroscuro --cli      # solo terminale
 ```bash
 python3 Chiaroscuro/app/build.py   # pacchetto per il sistema in uso, in Chiaroscuro/release/
 ```
-Oppure da GitHub: *Actions → Chiaroscuro app → Run workflow* (o un tag `chiaroscuro-v1.0.0`): i pacchetti per tutti i
-sistemi sono negli *Artifacts* dell'esecuzione.
+Oppure da GitHub: *Actions → Chiaroscuro app → Run workflow* (pacchetti negli *Artifacts*). Per **pubblicare una versione**:
+aggiorna `__version__` in `Chiaroscuro/chiaroscuro/__init__.py` e crea il tag, es. `git tag chiaroscuro-v1.0.1 && git push origin chiaroscuro-v1.0.1`:
+la build crea la Release e i link qui sopra puntano da soli alla nuova versione.
