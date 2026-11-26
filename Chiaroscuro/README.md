@@ -13,7 +13,7 @@ pianoforte ──USB/MIDI──▶ Chiaroscuro (app) ──Web API──▶ QLC+
                             └──▶ http://localhost:8088/config   impostazioni: fari, montaggio, limiti, MIDI, simulazione
 ```
 
-Stato (2026-11-26): **versione 1.0.0**. App macOS costruita e collaudata; Windows e Linux da costruire (vedi *Costruire
+Stato (2026-11-26): **versione 1.0.1**. App macOS costruita e collaudata; Windows e Linux da costruire (vedi *Costruire
 l'app*) e da provare sui rispettivi sistemi. Da provare col piano e coi fari veri.
 
 ---

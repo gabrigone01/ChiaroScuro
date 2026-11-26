@@ -1,4 +1,4 @@
-# Costruisce l'app Chiaroscuro per macOS (Apple Silicon), Windows e Linux.
+# Costruisce l'app Chiaroscuro per macOS (Apple Silicon), Windows e Linux (x86-64).
 # - A mano (Actions > Chiaroscuro app > Run workflow): i pacchetti sono negli "Artifacts" dell'esecuzione.
 # - Con un tag "chiaroscuro-v1.2.3": crea anche la Release con i pacchetti allegati, sia con la versione nel nome
 #   sia con un nome fisso (es. Chiaroscuro-macOS-arm64.dmg) usato dai link "ultima versione" del README.
@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, windows-latest, ubuntu-22.04]
+        os: [macos-latest, windows-latest, ubuntu-latest]   # etichette "latest": GitHub ritira le versioni vecchie
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
   release:
     needs: build
     if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/chiaroscuro-v') }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:

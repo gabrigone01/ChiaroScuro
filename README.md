@@ -42,5 +42,5 @@ python3 -m chiaroscuro --cli      # solo terminale
 python3 Chiaroscuro/app/build.py   # pacchetto per il sistema in uso, in Chiaroscuro/release/
 ```
 Oppure da GitHub: *Actions → Chiaroscuro app → Run workflow* (pacchetti negli *Artifacts*). Per **pubblicare una versione**:
-aggiorna `__version__` in `Chiaroscuro/chiaroscuro/__init__.py` e crea il tag, es. `git tag chiaroscuro-v1.0.1 && git push origin chiaroscuro-v1.0.1`:
+aggiorna `__version__` in `Chiaroscuro/chiaroscuro/__init__.py` e crea il tag, es. `git tag chiaroscuro-v1.0.2 && git push origin chiaroscuro-v1.0.2`:
 la build crea la Release e i link qui sopra puntano da soli alla nuova versione.
