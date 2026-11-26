@@ -44,3 +44,7 @@ python3 Chiaroscuro/app/build.py   # pacchetto per il sistema in uso, in Chiaros
 Oppure da GitHub: *Actions → Chiaroscuro app → Run workflow* (pacchetti negli *Artifacts*). Per **pubblicare una versione**:
 aggiorna `__version__` in `Chiaroscuro/chiaroscuro/__init__.py` e crea il tag, es. `git tag chiaroscuro-v1.0.2 && git push origin chiaroscuro-v1.0.2`:
 la build crea la Release e i link qui sopra puntano da soli alla nuova versione.
+
+## Licenza
+[MIT](LICENSE) © 2026 gabrigone01. QLC+ è un progetto separato ([www.qlcplus.org](https://www.qlcplus.org), licenza Apache 2.0)
+e va installato a parte; le definizioni delle fixture vengono lette dalla sua libreria.

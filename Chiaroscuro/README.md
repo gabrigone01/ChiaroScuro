@@ -175,3 +175,6 @@ Apple Silicon, Windows e Linux (*Actions → Chiaroscuro app → Run workflow*);
 - Fari veri: indirizzi/modi, linea dell'interfaccia DMX, resa dei colori (palette `PAL` in `generator.py`),
   limiti delle teste con *Prova i 4 angoli*, resa dei gobo.
 - Windows/Linux: costruire con GitHub Actions (o sul sistema) e provare.
+
+## Licenza
+[MIT](../LICENSE) © 2026 gabrigone01.
