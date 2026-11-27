@@ -13,7 +13,7 @@ pianoforte ──USB/MIDI──▶ Chiaroscuro (app) ──Web API──▶ QLC+
                             └──▶ http://localhost:8088/config   impostazioni: fari, montaggio, limiti, MIDI, simulazione
 ```
 
-Stato (2026-11-26): **versione 1.0.1**. App macOS costruita e collaudata; Windows e Linux da costruire (vedi *Costruire
+Stato (2026-11-27): **versione 1.1.0** (cambi di atmosfera più rapidi). App macOS costruita e collaudata; Windows e Linux da costruire (vedi *Costruire
 l'app*) e da provare sui rispettivi sistemi. Da provare col piano e coi fari veri.
 
 ---
@@ -104,7 +104,7 @@ Finestra di circa 3 secondi; soglie in cima a `chiaroscuro/analyzer.py`.
 
 | Atmosfera | Quando | Varianti (colori) | Movimento teste | Gobo / prisma |
 |---|---|---|---|---|
-| **Attesa** | 7 s senza note | Respiro d'ambra · Brace · Notte | cerchio piccolissimo, 24 s | aperto |
+| **Attesa** | 4 s senza note | Respiro d'ambra · Brace · Notte | cerchio piccolissimo, 24 s | aperto |
 | **Dolce** | piano, maggiore | Candela e rosa · Alba · Lavanda e miele | otto morbido, a specchio | aperto |
 | **Sereno** | mezzoforte, maggiore | Oro · Cielo d'estate · Prato | cerchio, a onda | gobo che gira lento |
 | **Malinconico** | minore | Crepuscolo · Pioggia · Viola e ambra | spazzata lenta, a specchio | gobo lento |
@@ -115,8 +115,10 @@ Finestra di circa 3 secondi; soglie in cima a `chiaroscuro/analyzer.py`.
 
 - **Varianti in AUTO**: ogni volta che il piano rientra in un'atmosfera usa la variante successiva; se un'atmosfera dura più
   di 2 minuti passa da sola alla variante dopo. Ogni variante usa un gobo diverso.
-- **Tonalità** (profili di Krumhansl, ultimi ~8 s, bassi più pesanti); **isteresi** ~4 s (2,5 verso/da forte, Tempesta
-  dopo 1 s); **dinamica** nota per nota con rilascio più lungo col pedale; **lampi** sui colpi forti in Appassionato/Tempesta.
+- **Tonalità** (profili di Krumhansl, ultimi ~8 s, bassi più pesanti); **isteresi** 3,5 s tra atmosfere tranquille
+  (1,2 s verso/da Brillante, Appassionato, Tempesta; Tempesta entra dopo 0,6 s). **Pausa o nota lunga** (0,9 s senza
+  note nuove) dopo un passaggio forte/veloce: si passa subito (~1 s) a un'atmosfera calma scelta da registro e tonalità
+  delle ultime note, senza aspettare il silenzio; **dinamica** nota per nota con rilascio più lungo col pedale; **lampi** sui colpi forti in Appassionato/Tempesta.
 - Test col simulatore: 35 riconoscimenti su 36 (l'errore: Do maggiore pieno di accordi di La minore → Malinconico).
 
 ## Come vengono usati i fari

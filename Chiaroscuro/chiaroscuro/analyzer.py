@@ -5,8 +5,9 @@ import math
 from collections import deque
 
 # =========================================================================== parametri (da tarare sul piano)
-SILENZIO_S = 7.0        # dopo quanti secondi senza note si va in ATTESA
-FINESTRA_S = 3.0        # finestra per note/secondo, accordi, registro
+SILENZIO_S = 4.0        # dopo quanti secondi senza note (e nessuna tenuta) si va in ATTESA
+PAUSA_S = 0.9          # nessuna nota nuova da tanto (pausa o nota lunga): un programma forte si calma subito
+FINESTRA_S = 2.5        # finestra per note/secondo, accordi, registro
 SOGLIA_PIANO = 58       # velocity media sotto cui il tocco è "piano"
 SOGLIA_FORTE = 82       # sopra: "forte" (Appassionato)
 SOGLIA_FF = 96          # sopra (con altri indizi): "fortissimo" (Tempesta)
@@ -32,6 +33,7 @@ CARATTERE = {
     "TEMPESTA":     (0.35, 0.30),
 }
 FORTI = ("APPASSIONATO", "TEMPESTA")
+VIVACI = FORTI + ("BRILLANTE",)      # programmi veloci/forti: devono spegnersi appena ci si ferma
 
 # Krumhansl-Kessler: profili tonali per riconoscere maggiore/minore
 _MAJ = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]
@@ -68,6 +70,7 @@ class Analizzatore:
         self.cand, self.cand_since = "ATTESA", 0.0
         self.colpi = 0                 # colpi forti da segnalare
         self._cluster = []             # note dell'accordo in corso
+        self._ultimi = {"vel": 0.0, "altezza": 60.0}   # carattere delle ultime note suonate (per le pause)
         self._t = None
         self.f = {}                    # ultime caratteristiche calcolate (per il display)
 
@@ -131,6 +134,7 @@ class Analizzatore:
             last = x
         f["rate"] = len(gruppi) / span
         f["accordo"] = sum(gruppi) / len(gruppi)
+        self._ultimi = {"vel": f["vel"], "altezza": f["altezza"]}
         return f
 
     def _tonalita(self):
@@ -150,8 +154,8 @@ class Analizzatore:
     def _mood_grezzo(self, f):
         if f["silenzio"] >= SILENZIO_S and not self.held:
             return "ATTESA"
-        if f["n"] == 0:
-            return self.mood if self.mood != "ATTESA" else "DOLCE"
+        if f["silenzio"] >= PAUSA_S:
+            return self._mood_calmo()
         v, r, acc, h = f["vel"], f["rate"], f["accordo"], f["altezza"]
         indizi = (f["p90"] >= 110) + (r >= 5) + (acc >= 3) + (f["grave"] >= 0.3) + (v >= SOGLIA_FF + 8)
         minore = self.is_minore
@@ -169,17 +173,29 @@ class Analizzatore:
             return "MISTERIOSO" if h < REGISTRO_GRAVE - 3 else "MALINCONICO"
         return "BRILLANTE" if r >= NOTE_VELOCI else "SERENO"
 
+    def _mood_calmo(self):
+        """Il musicista si è fermato o tiene una nota lunga: atmosfera tranquilla secondo le ultime note
+        (o quelle tenute), mai un programma forte o veloce."""
+        h = (sum(self.held) / len(self.held)) if self.held else self._ultimi["altezza"]
+        if h < REGISTRO_GRAVE:
+            return "MISTERIOSO"
+        if self.is_minore:
+            return "MALINCONICO"
+        return "SERENO" if SOGLIA_PIANO <= self._ultimi["vel"] < SOGLIA_FORTE else "DOLCE"
+
     def _attesa_cambio(self, da, a):
         """Quanto deve durare un nuovo modo di suonare prima di cambiare atmosfera."""
         if a == "TEMPESTA":
-            return 1.0                       # la rabbia arriva di colpo
-        if da == "TEMPESTA":
-            return 5.0                       # e si calma lentamente
+            return 0.6                       # la rabbia arriva di colpo
         if a == "ATTESA" or da == "ATTESA":
             return 0.3                       # (il silenzio è già filtrato da SILENZIO_S)
-        if a in FORTI or da in FORTI:
-            return 2.5
-        return 4.0
+        if da in VIVACI and a not in VIVACI and self.f.get("silenzio", 0) >= PAUSA_S:
+            return 0.2                       # fermo o nota lunga dopo un passaggio forte: si calma subito
+        if da == "TEMPESTA":
+            return 1.5
+        if a in VIVACI or da in VIVACI:
+            return 1.2
+        return 3.5                           # tra due atmosfere tranquille: niente sbalzi continui
 
     def tick(self, t):
         dt = 0.0 if self._t is None else max(0.0, t - self._t)
@@ -191,8 +207,8 @@ class Analizzatore:
         if self.sustain:
             tau_rel *= 1.7
         self.env *= math.exp(-dt / tau_rel)
-        if f["silenzio"] > 1.0:
-            self.E *= math.exp(-dt / 5.0)
+        if f["silenzio"] > PAUSA_S:
+            self.E *= math.exp(-dt / 2.0)
         k = math.exp(-dt / MEMORIA_TONALITA_S)
         self.pc = [x * k for x in self.pc]
         self._tonalita()
@@ -200,8 +216,10 @@ class Analizzatore:
         raw = self._mood_grezzo(f)
         if raw != self.cand:
             self.cand, self.cand_since = raw, t
+        subito = self.cand in ("TEMPESTA", "ATTESA") or self.mood == "ATTESA" \
+            or (self.mood in VIVACI and self.cand not in VIVACI)
         if self.cand != self.mood and t - self.cand_since >= self._attesa_cambio(self.mood, self.cand) \
-                and (t - self.mood_since >= 6.0 or self.cand in ("TEMPESTA", "ATTESA") or self.mood == "ATTESA"):
+                and (t - self.mood_since >= (3.0 if self.cand in VIVACI or self.mood in VIVACI else 5.0) or subito):
             self.mood, self.mood_since = self.cand, t
         # livello di luce
         if self.mood == "ATTESA":
